@@ -12,6 +12,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
     private boolean gameStarted = false;
 
     private ArrayList<Rectangle> pipes;
+    private ArrayList<Rectangle> coins; // List to hold coins
     private Timer timer;
     private int score = 0;
     private static int bestScore = 0;
@@ -20,6 +21,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
     private Image capybaraUpImage; // The image of the capybara with wings up
     private Image capybaraDownImage; // The image of the capybara with wings down
+    private Image coinImage; // The image for the coin
     
     private Image pipeTopImage; // The image of the top part of the pipe
     private Image pipeBottomImage; // The image of the bottom part of the pipe
@@ -35,6 +37,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         frame.setVisible(true);
 
         pipes = new ArrayList<>();
+        coins = new ArrayList<>(); // Initialize the coins list
 
         timer = new Timer(20, this);
         timer.start();
@@ -53,6 +56,9 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         pipeTopImage = new ImageIcon(getClass().getResource("/image/pipe_top.png")).getImage();
         pipeBottomImage = new ImageIcon(getClass().getResource("/image/pipe_bottom.png")).getImage();
 
+        // Load coin image (ensure it has transparent background)
+        coinImage = new ImageIcon(getClass().getResource("/image/coin.png")).getImage();
+
         // Load background image
         backgroundImage = new ImageIcon(getClass().getResource("/image/background.png")).getImage(); // PNG image
     }
@@ -70,16 +76,10 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
         g.setColor(Color.green);
         g.fillRect(0, 490, 800, 10); // Grass on the ground
 
-        long currentTime = System.currentTimeMillis();
-
-        // If jumping (velocity is negative)
+        // Draw the capybara
         if (birdVelocity < 0) { 
-            // Display the wings up image during jump
             g.drawImage(capybaraUpImage, 100, birdY, this); // Draw wings-up image
-        } 
-        // If falling (velocity is positive)
-        else if (birdVelocity > 0) { 
-            // Display wings-down image when falling
+        } else if (birdVelocity > 0) { 
             g.drawImage(capybaraDownImage, 100, birdY, this); // Draw wings-down image
         }
 
@@ -94,6 +94,12 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
             }
         }
 
+        // Draw coins (the coins move with the pipes)
+        for (Rectangle coin : coins) {
+            g.drawImage(coinImage, coin.x, coin.y, 30, 30, this); // Size the coin image to fit
+        }
+
+        // Draw the score
         g.setColor(Color.white);
         g.setFont(new Font("Arial", Font.BOLD, 30));
         g.drawString("Score: " + score, 10, 30);
@@ -143,7 +149,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
             ArrayList<Rectangle> toRemove = new ArrayList<>();
             for (Rectangle pipe : pipes) {
-                pipe.x -= gameSpeed;
+                pipe.x -= gameSpeed; // Move the pipes leftward
                 if (pipe.x + pipe.width < 0) toRemove.add(pipe);
 
                 if (pipe.intersects(new Rectangle(100, birdY, BIRD_SIZE, BIRD_SIZE))) {
@@ -156,13 +162,20 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
             if (pipes.size() < 4) addPipe(false);
 
-            for (Rectangle pipe : pipes) {
-                if (pipe.y == 0) { 
-                    if (pipe.x + pipe.width < 100 && pipe.x + pipe.width + gameSpeed >= 100) {
-                        score++;
-                    }
+            // Move the coins with the pipes
+            for (Rectangle coin : coins) {
+                coin.x -= gameSpeed; // Move coins leftward as well
+            }
+
+            // Check if the bird collects a coin
+            ArrayList<Rectangle> coinsToRemove = new ArrayList<>();
+            for (Rectangle coin : coins) {
+                if (new Rectangle(100, birdY, BIRD_SIZE, BIRD_SIZE).intersects(coin)) {
+                    score++; // Increment score when coin is collected
+                    coinsToRemove.add(coin); // Remove the collected coin
                 }
             }
+            coins.removeAll(coinsToRemove);
 
             if (birdY > 500 || birdY < 0) {
                 gameOver = true;
@@ -193,6 +206,14 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
 
         pipes.add(new Rectangle(x, 0, width, height));
         pipes.add(new Rectangle(x, height + space, width, 600 - height - space));
+
+        // Add coins with a gap from the pipes (adjust the Y range)
+        int coinY = height + rand.nextInt(space - 50) + 30; // Ensure coin is not too close to the pipes
+        addCoin(x + width, coinY); // Add coin within safe zone between the pipes
+    }
+
+    private void addCoin(int x, int y) {
+        coins.add(new Rectangle(x, y, 30, 30)); // Add a coin with a fixed size
     }
 
     public void keyPressed(KeyEvent e) {
@@ -202,6 +223,7 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
                 birdVelocity = 0;
                 score = 0;
                 pipes.clear();
+                coins.clear(); // Clear the coins as well
                 addPipe(true);
                 addPipe(true);
                 gameOver = false;
@@ -210,26 +232,22 @@ public class FlappyBird extends JPanel implements ActionListener, KeyListener {
                 gameStarted = true;
                 birdVelocity = JUMP;
                 pipes.clear();
+                coins.clear(); // Clear the coins when the game starts
                 addPipe(true);
                 addPipe(true);
             } else {
                 birdVelocity = JUMP;
             }
         }
-        if (e.getKeyCode() == KeyEvent.VK_UP) {
+        if (e.getKeyCode() == KeyEvent.VK_UP && !gameStarted && !gameOver) {
             gameSpeed = Math.min(gameSpeed + 1, 15);
         }
-        if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+        if (e.getKeyCode() == KeyEvent.VK_DOWN && !gameStarted && !gameOver) {
             gameSpeed = Math.max(gameSpeed - 1, 1);
         }
     }
 
-    public void keyReleased(KeyEvent e) {
-        // Reset jumping state when spacebar is released
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-            // isJumping = false; // Optional, only if you need this variable
-        }
-    }
+    public void keyReleased(KeyEvent e) {}
 
     public void keyTyped(KeyEvent e) {}
 
