@@ -41,6 +41,18 @@ public class PlusOuMoinsSwing extends JFrame {
 
         guessButton.addActionListener(e -> makeGuess());
         inputField.addActionListener(e -> makeGuess());
+
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    dispose(); 
+                    Launcher.main(null); 
+                }
+            }
+        });
+
+        setFocusable(true);  
     }
 
     private void makeGuess() {

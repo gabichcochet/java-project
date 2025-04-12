@@ -22,7 +22,7 @@ public class FlappyBird {
     private Timer timer;
     private int score = 0;
     private static int bestScore = 0;
-    private int gameSpeed = 5;
+    private int gameSpeed = 5; 
     private Random rand = new Random();
 
     private Image capybaraUpImage;
@@ -31,12 +31,12 @@ public class FlappyBird {
     private Image pipeTopImage;
     private Image pipeBottomImage;
     private Image backgroundImage;
-    private Image alternateBackgroundImage;
+    private Image background100Image;
+    private Image background200Image;
 
     public FlappyBird() {
         frame = new JFrame("Flappy Bird");
 
-        // Create the game panel
         gamePanel = new GamePanel();
 
         frame.setSize(GAME_WIDTH, GAME_HEIGHT);
@@ -55,6 +55,7 @@ public class FlappyBird {
             timer.start();
 
             frame.addKeyListener(this);
+            frame.setFocusable(true); 
 
             capybaraUpImage = new ImageIcon(getClass().getResource("/image/capybara_wing_up.png")).getImage();
             capybaraDownImage = new ImageIcon(getClass().getResource("/image/capybara_wing_down.png")).getImage();
@@ -63,37 +64,37 @@ public class FlappyBird {
 
             pipeTopImage = new ImageIcon(getClass().getResource("/image/pipe_top.png")).getImage();
             pipeBottomImage = new ImageIcon(getClass().getResource("/image/pipe_bottom.png")).getImage();
-
             coinImage = new ImageIcon(getClass().getResource("/image/coin.png")).getImage();
-
             backgroundImage = new ImageIcon(getClass().getResource("/image/background.png")).getImage();
-            alternateBackgroundImage = new ImageIcon(getClass().getResource("/image/background_alt.png")).getImage();
+            background100Image = new ImageIcon(getClass().getResource("/image/background_100.png")).getImage();
+            background200Image = new ImageIcon(getClass().getResource("/image/background_200.png")).getImage();
         }
 
         @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
 
-            if (score >= 10) {
-                g.drawImage(alternateBackgroundImage, 0, 0, getWidth(), getHeight(), this);
+            if (score >= 300) {
+                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this); 
+            } else if (score >= 200) {
+                g.drawImage(background200Image, 0, 0, getWidth(), getHeight(), this);
+            } else if (score >= 100) {
+                g.drawImage(background100Image, 0, 0, getWidth(), getHeight(), this);
             } else {
-                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+                g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this); 
             }
 
-            // Ground rendering
             Graphics2D g2d = (Graphics2D) g;
             GradientPaint gradient = new GradientPaint(0, 500, new Color(255, 165, 0), 0, 600, new Color(255, 223, 0));
             g2d.setPaint(gradient);
             g2d.fillRect(0, 500, getWidth(), 100);
 
-            // Bird rendering
             if (birdVelocity < 0) {
                 g.drawImage(capybaraUpImage, 100, birdY, this);
             } else {
                 g.drawImage(capybaraDownImage, 100, birdY, this);
             }
 
-            // Pipe rendering
             for (Rectangle pipe : pipes) {
                 if (pipe.y == 0) {
                     g.drawImage(pipeTopImage, pipe.x, pipe.y, pipe.width, pipe.height, this);
@@ -102,21 +103,20 @@ public class FlappyBird {
                 }
             }
 
-            // Coin rendering
             for (Rectangle coin : coins) {
                 g.drawImage(coinImage, coin.x, coin.y, 30, 30, this);
             }
 
-            // HUD display
             g.setColor(Color.white);
             g.setFont(new Font("Arial", Font.BOLD, 30));
             g.drawString("Score: " + score, 10, 30);
             g.drawString("Best: " + bestScore, 10, 60);
             g.drawString("Speed: " + gameSpeed, 10, 90);
-
             if (!gameStarted) {
-                g.setFont(new Font("Arial", Font.BOLD, 30));
-                g.drawString("Press SPACE to Start", 250, 250);
+                g.setFont(new Font("Arial", Font.BOLD, 10));
+                g.drawString("Cliquer sur ESPACE pour jouer", 250, 100);
+                g.drawString("Cliquer sur ESC pour retourner au Launcher", 250, 115); 
+                g.drawString("Vous pouvez ajuster la vitesse avec les fleches HAUT/BAS(1-15)", 250, 130); 
             }
 
             if (gameOver) {
@@ -202,6 +202,11 @@ public class FlappyBird {
 
         @Override
         public void keyPressed(KeyEvent e) {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                frame.dispose();
+                Launcher.main(null); 
+            }
+
             if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                 if (gameOver) {
                     birdY = 300;
@@ -224,10 +229,21 @@ public class FlappyBird {
                     birdVelocity = JUMP;
                 }
             }
+
+            if (!gameStarted) {
+                if (e.getKeyCode() == KeyEvent.VK_UP && gameSpeed < 15) {
+                    gameSpeed++;
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_DOWN && gameSpeed > 1) {
+                    gameSpeed--;
+                }
+            }
         }
 
         @Override
         public void keyReleased(KeyEvent e) {}
+
         @Override
         public void keyTyped(KeyEvent e) {}
     }
