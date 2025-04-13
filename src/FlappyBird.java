@@ -1,6 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -22,7 +23,7 @@ public class FlappyBird {
     private Timer timer;
     private int score = 0;
     private static int bestScore = 0;
-    private int gameSpeed = 5; 
+    private int gameSpeed = 5;
     private Random rand = new Random();
 
     private Image capybaraUpImage;
@@ -44,6 +45,12 @@ public class FlappyBird {
         frame.add(gamePanel);
         frame.setResizable(false);
         frame.setVisible(true);
+
+        // Load best score from file when game starts
+        loadBestScore();
+
+        // Try to load saved game state
+        loadGameState();
     }
 
     private class GamePanel extends JPanel implements ActionListener, KeyListener {
@@ -246,6 +253,61 @@ public class FlappyBird {
 
         @Override
         public void keyTyped(KeyEvent e) {}
+    }
+
+    private void loadBestScore() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("best_score.txt"))) {
+            String line = reader.readLine();
+            if (line != null) {
+                bestScore = Integer.parseInt(line);
+            }
+        } catch (IOException | NumberFormatException e) {
+            bestScore = 0; // Default score if file does not exist or is invalid
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void loadGameState() {
+        File gameStateFile = new File("game_state.ser");
+        if (gameStateFile.exists()) {
+            try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(gameStateFile))) {
+                pipes = (ArrayList<Rectangle>) in.readObject();
+                coins = (ArrayList<Rectangle>) in.readObject();
+                score = in.readInt();
+                gameSpeed = in.readInt();  // Optionally load saved game speed
+            } catch (IOException | ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        } else {
+            // Si le fichier n'existe pas, on commence avec un jeu sans sauvegarde
+            pipes = new ArrayList<>();
+            coins = new ArrayList<>();
+            score = 0;
+            gameSpeed = 8;  // Valeur par défaut de la vitesse du jeu
+        }
+    }
+
+
+    private void saveGameState() {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("game_state.ser"))) {
+            out.writeObject(pipes);
+            out.writeObject(coins);
+            out.writeInt(score);
+            out.writeInt(gameSpeed);  // Optionally save game speed
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveBestScore() {
+        if (score > bestScore) {
+            bestScore = score;
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("best_score.txt"))) {
+                writer.write(String.valueOf(bestScore));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public static void main(String[] args) {
